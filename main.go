@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/scrapli/scrapligo/driver/opoptions"
 	"github.com/scrapli/scrapligo/driver/options"
 	"github.com/scrapli/scrapligo/platform"
 )
@@ -27,6 +26,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 
 	if err := sendConfig(host, certData); err != nil {
 		panic(err)
@@ -60,34 +60,22 @@ func sendConfig(host string, certData *certData) error {
 	}
 	defer d.Close()
 
-	configs := []string{
+	commands := []string{
 		fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
 		fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
+		fmt.Sprintf("set / system tls server-profile %s key \"%s\"", certData.ProfileName, certData.Key),
+		fmt.Sprintf("set / system tls server-profile %s certificate \"%s\"", certData.ProfileName, certData.Cert),
+		fmt.Sprintf("set / system tls server-profile %s trust-anchor \"%s\"", certData.ProfileName, certData.CA),
+		"commit save",
 	}
 
-	_, err = d.SendConfigs(configs)
-	if err != nil {
-		return err
+	for _, cmd := range commands {
+		r, err := d.SendCommand(cmd)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("cmd input %s, response: %s", r.Input, r.Result)
 	}
-	// key and cert are send outside of sendconfigs, because it was not working properly with `eager` option
-	_, err = d.SendConfig(fmt.Sprintf("set / system tls server-profile %s key \"%s\"", certData.ProfileName, certData.Key),
-		opoptions.WithEager(),
-	)
-	if err != nil {
-		return err
-	}
-	_, err = d.SendConfig(fmt.Sprintf("set / system tls server-profile %s certificate \"%s\"", certData.ProfileName, certData.Cert),
-		opoptions.WithEager())
-	if err != nil {
-		return err
-	}
-	_, err = d.SendConfig(fmt.Sprintf("set / system tls server-profile %s trust-anchor \"%s\"", certData.ProfileName, certData.CA),
-		opoptions.WithEager())
-	if err != nil {
-		return err
-	}
-
-	_, err = d.SendConfig("commit save")
 
 	return err
 }
