@@ -66,10 +66,11 @@ func sendConfig(host string, certData *certData) error {
 		fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
 	}
 
-	_, err = d.SendConfigs(configs)
+	r, err := d.SendConfigs(configs)
 	if err != nil {
 		return err
 	}
+	fmt.Println("response:", r)
 
 	commands := []string{
 		//"enter candidate",
