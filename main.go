@@ -3,13 +3,37 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/scrapli/scrapligo/driver/options"
 	"github.com/scrapli/scrapligo/platform"
 )
 
+const (
+	keyStartMarker  = "-----BEGIN RSA PRIVATE KEY-----"
+	keyEndMarker    = "-----END RSA PRIVATE KEY-----"
+	certStartMarker = "-----BEGIN CERTIFICATE-----"
+	certEndMarker   = "-----END CERTIFICATE-----"
+	caStartMarker   = "-----BEGIN CERTIFICATE-----"
+	caEndMarker     = "-----END CERTIFICATE-----"
+)
+
 func main() {
 	host := os.Args[1]
+
+	certData, err := getCertificateData()
+	if err != nil {
+		panic(err)
+	}
+
+	configs := []string{
+		fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
+		fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
+		fmt.Sprintf("set / system tls server-profile %s key \"%s\"", certData.ProfileName, certData.Key),
+		fmt.Sprintf("set / system tls server-profile %s certificate \"%s\"", certData.ProfileName, certData.Cert),
+		fmt.Sprintf("set / system tls server-profile %s trust-anchor \"%s\"", certData.ProfileName, certData.CA),
+	}
 
 	p, err := platform.NewPlatform(
 		// cisco_iosxe refers to the included cisco iosxe platform definition
@@ -39,16 +63,91 @@ func main() {
 
 	defer d.Close()
 
-	r, err := d.SendCommand("show version")
+	//r, err := d.SendCommand("show version")
+	r, err := d.SendConfigs(configs)
 	if err != nil {
 		fmt.Printf("failed to send command; error: %+v\n", err)
 		return
 	}
-
+	fmt.Println(r)
+	/*
 	fmt.Printf(
 		"sent command '%s', output received (SendCommand):\n %s\n\n\n",
 		r.Input,
 		r.Result,
 	)
+	*/
+}
 
+type certData struct {
+	ProfileName string
+	CA          string
+	Cert        string
+	Key         string
+}
+
+func getCertificateData() (*certData, error) {
+	certData := &certData{
+		ProfileName: "k8s-profile",
+	}
+	files, err := os.ReadDir("data")
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range files {
+		if !f.IsDir() {
+			b, err := os.ReadFile(filepath.Join("data", f.Name()))
+			if err != nil {
+				return nil, err
+			}
+			var found bool
+			if f.Name() == "ca.crt" {
+				certData.CA, found = getStringInBetween(string(b), caStartMarker, caEndMarker, true)
+				if !found {
+					return nil, fmt.Errorf("cannot get the ca string")
+				}
+			}
+			if f.Name() == "tls.crt" {
+				certData.Cert, found = getStringInBetween(string(b), certStartMarker, certEndMarker, true)
+				if !found {
+					return nil, fmt.Errorf("cannot get the cert string")
+				}
+			}
+			if f.Name() == "tls.key" {
+				certData.Key, found = getStringInBetween(string(b), keyStartMarker, keyEndMarker, true)
+				if !found {
+					return nil, fmt.Errorf("cannot get the key string")
+				}
+			}
+		}
+	}
+	return certData, nil
+}
+
+// GetStringInBetween returns a string between the start/end markers with markers either included or excluded
+func getStringInBetween(str string, start, end string, include bool) (result string, found bool) {
+	// start index
+	sidx := strings.Index(str, start)
+	if sidx == -1 {
+		return "", false
+	}
+
+	// forward start index if we don't want to include the markers
+	if !include {
+		sidx += len(start)
+	}
+
+	newS := str[sidx:]
+
+	// end index
+	eidx := strings.Index(newS, end)
+	if eidx == -1 {
+		return "", false
+	}
+	// to include the end marker, increment the end index up till its length
+	if include {
+		eidx += len(end)
+	}
+
+	return newS[:eidx], true
 }
