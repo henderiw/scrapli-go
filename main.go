@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/scrapli/scrapligo/driver/opoptions"
 	"github.com/scrapli/scrapligo/driver/options"
 	"github.com/scrapli/scrapligo/platform"
 )
@@ -27,14 +28,12 @@ func main() {
 		panic(err)
 	}
 
-	configs := []string{
-		fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
-		fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
-		fmt.Sprintf("set / system tls server-profile %s key \"%s\"", certData.ProfileName, certData.Key),
-		fmt.Sprintf("set / system tls server-profile %s certificate \"%s\"", certData.ProfileName, certData.Cert),
-		fmt.Sprintf("set / system tls server-profile %s trust-anchor \"%s\"", certData.ProfileName, certData.CA),
+	if err := sendConfig(host, certData); err != nil {
+		panic(err)
 	}
+}
 
+func sendConfig(host string, certData *certData) error {
 	p, err := platform.NewPlatform(
 		// cisco_iosxe refers to the included cisco iosxe platform definition
 		"nokia_srl",
@@ -45,38 +44,52 @@ func main() {
 	)
 	if err != nil {
 		fmt.Printf("failed to create platform; error: %+v\n", err)
-		return
+		return err
 	}
 	d, err := p.GetNetworkDriver()
 	if err != nil {
 		fmt.Printf("failed to fetch network driver from the platform; error: %+v\n", err)
 
-		return
+		return err
 	}
-
 	err = d.Open()
 	if err != nil {
 		fmt.Printf("failed to open driver; error: %+v\n", err)
 
-		return
+		return err
 	}
-
 	defer d.Close()
 
-	//r, err := d.SendCommand("show version")
-	r, err := d.SendConfigs(configs)
-	if err != nil {
-		fmt.Printf("failed to send command; error: %+v\n", err)
-		return
+	configs := []string{
+		fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
+		fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
 	}
-	fmt.Println(r)
-	/*
-	fmt.Printf(
-		"sent command '%s', output received (SendCommand):\n %s\n\n\n",
-		r.Input,
-		r.Result,
+
+	_, err = d.SendConfigs(configs)
+	if err != nil {
+		return err
+	}
+	// key and cert are send outside of sendconfigs, because it was not working properly with `eager` option
+	_, err = d.SendConfig(fmt.Sprintf("set / system tls server-profile %s key \"%s\"", certData.ProfileName, certData.Key),
+		opoptions.WithEager(),
 	)
-	*/
+	if err != nil {
+		return err
+	}
+	_, err = d.SendConfig(fmt.Sprintf("set / system tls server-profile %s certificate \"%s\"", certData.ProfileName, certData.Cert),
+		opoptions.WithEager())
+	if err != nil {
+		return err
+	}
+	_, err = d.SendConfig(fmt.Sprintf("set / system tls server-profile %s trust-anchor \"%s\"", certData.ProfileName, certData.CA),
+		opoptions.WithEager())
+	if err != nil {
+		return err
+	}
+
+	_, err = d.SendConfig("commit save")
+
+	return err
 }
 
 type certData struct {
