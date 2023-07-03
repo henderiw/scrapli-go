@@ -27,7 +27,6 @@ func main() {
 		panic(err)
 	}
 
-
 	if err := sendConfig(host, certData); err != nil {
 		panic(err)
 	}
@@ -70,11 +69,12 @@ func sendConfig(host string, certData *certData) error {
 	}
 
 	for _, cmd := range commands {
+		fmt.Printf("cmd %s\n", cmd)
 		r, err := d.SendCommand(cmd)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("cmd input %s, response: %s", r.Input, r.Result)
+		fmt.Printf("cmd input %s, response: %s\n", r.Input, r.Result)
 	}
 
 	return err
