@@ -60,7 +60,7 @@ func sendConfig(host string, certData *certData) error {
 	defer d.Close()
 
 	commands := []string{
-		"enter candidate",
+		//"enter candidate",
 		fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
 		fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
 		fmt.Sprintf("set / system tls server-profile %s key \"%s\"", certData.ProfileName, certData.Key),
@@ -71,7 +71,7 @@ func sendConfig(host string, certData *certData) error {
 
 	for _, cmd := range commands {
 		fmt.Printf("cmd %s\n", cmd)
-		r, err := d.SendCommand(cmd)
+		r, err := d.SendConfig(cmd)
 		if err != nil {
 			return err
 		}
