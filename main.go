@@ -60,6 +60,7 @@ func sendConfig(host string, certData *certData) error {
 	defer d.Close()
 
 	commands := []string{
+		"enter candidate",
 		fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
 		fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
 		fmt.Sprintf("set / system tls server-profile %s key \"%s\"", certData.ProfileName, certData.Key),
