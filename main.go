@@ -72,7 +72,7 @@ func sendConfig(host string, certData *certData) error {
 
 	for _, cmd := range commands {
 		fmt.Printf("cmd %s\n", cmd)
-		r, err := d.SendConfig(cmd)
+		r, err := d.SendCommand(cmd)
 		if err != nil {
 			return err
 		}
