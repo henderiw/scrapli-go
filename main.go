@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/scrapli/scrapligo/driver/opoptions"
 	"github.com/scrapli/scrapligo/driver/options"
 	"github.com/scrapli/scrapligo/platform"
 )
@@ -60,10 +61,20 @@ func sendConfig(host string, certData *certData) error {
 	}
 	defer d.Close()
 
-	commands := []string{
-		//"enter candidate",
+	configs := []string{
 		fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
 		fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
+	}
+
+	_, err = d.SendConfigs(configs)
+	if err != nil {
+		return err
+	}
+
+	commands := []string{
+		//"enter candidate",
+		//fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
+		//fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
 		fmt.Sprintf("set / system tls server-profile %s key \"%s\"", certData.ProfileName, certData.Key),
 		fmt.Sprintf("set / system tls server-profile %s certificate \"%s\"", certData.ProfileName, certData.Cert),
 		fmt.Sprintf("set / system tls server-profile %s trust-anchor \"%s\"", certData.ProfileName, certData.CA),
@@ -72,7 +83,7 @@ func sendConfig(host string, certData *certData) error {
 
 	for _, cmd := range commands {
 		fmt.Printf("cmd %s\n", cmd)
-		r, err := d.SendCommand(cmd)
+		r, err := d.SendConfig(cmd, opoptions.WithEager())
 		if err != nil {
 			return err
 		}
