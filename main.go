@@ -33,6 +33,7 @@ func main() {
 }
 
 func sendConfig(host string, certData *certData) error {
+
 	p, err := platform.NewPlatform(
 		// cisco_iosxe refers to the included cisco iosxe platform definition
 		"nokia_srl",
@@ -76,9 +77,10 @@ func sendConfig(host string, certData *certData) error {
 			return err
 		}
 		fmt.Printf("cmd input %s, response: %s\n", r.Input, r.Result)
+
 	}
 
-	return err
+	return nil
 }
 
 type certData struct {
@@ -116,10 +118,11 @@ func getCertificateData() (*certData, error) {
 				}
 			}
 			if f.Name() == "tls.key" {
-				certData.Key, found = getStringInBetween(string(b), keyStartMarker, keyEndMarker, true)
+				certData.Key, found = getStringInBetween(string(b), keyStartMarker, keyEndMarker, false)
 				if !found {
 					return nil, fmt.Errorf("cannot get the key string")
 				}
+				certData.Key = strings.ReplaceAll(certData.Key, "\n", "")
 			}
 		}
 	}
