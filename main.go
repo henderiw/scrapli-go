@@ -91,7 +91,7 @@ func sendConfig(host string, certData *certData) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("cmd input %s, response: %s\n", r.Failed, r.Responses)
+	fmt.Printf("cmd input %s, response: %v\n", r.Failed, r.Responses)
 
 	//}
 
