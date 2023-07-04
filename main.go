@@ -76,12 +76,12 @@ func sendConfig(host string, certData *certData) error {
 	}
 
 	commands := []string{
-		"enter candidate",
-		fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
-		fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
-		fmt.Sprintf("set / system tls server-profile %s key %s", certData.ProfileName, certData.Key),
-		fmt.Sprintf("set / system tls server-profile %s certificate \"%s\"", certData.ProfileName, certData.Cert),
-		fmt.Sprintf("set / system tls server-profile %s trust-anchor \"%s\"", certData.ProfileName, certData.CA),
+		"enter candidate\n",
+		fmt.Sprintf("set / system tls server-profile %s\n", certData.ProfileName),
+		fmt.Sprintf("set / system tls server-profile %s authenticate-client false\n", certData.ProfileName),
+		fmt.Sprintf("set / system tls server-profile %s key %s\n", certData.ProfileName, certData.Key),
+		fmt.Sprintf("set / system tls server-profile %s certificate \"%s\" \n", certData.ProfileName, certData.Cert),
+		fmt.Sprintf("set / system tls server-profile %s trust-anchor \"%s\" \n", certData.ProfileName, certData.CA),
 		"commit save",
 	}
 
