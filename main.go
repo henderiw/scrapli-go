@@ -76,24 +76,24 @@ func sendConfig(host string, certData *certData) error {
 	}
 
 	commands := []string{
-		//"enter candidate",
-		//fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
-		//fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
+		"enter candidate",
+		fmt.Sprintf("set / system tls server-profile %s", certData.ProfileName),
+		fmt.Sprintf("set / system tls server-profile %s authenticate-client false", certData.ProfileName),
 		fmt.Sprintf("set / system tls server-profile %s key %s", certData.ProfileName, certData.Key),
 		fmt.Sprintf("set / system tls server-profile %s certificate \"%s\"", certData.ProfileName, certData.Cert),
 		fmt.Sprintf("set / system tls server-profile %s trust-anchor \"%s\"", certData.ProfileName, certData.CA),
 		"commit save",
 	}
 
-	for _, cmd := range commands {
-		fmt.Printf("cmd %s\n", cmd)
-		r, err := d.SendConfig(cmd, opoptions.WithEager())
-		if err != nil {
-			return err
-		}
-		fmt.Printf("cmd input %s, response: %s\n", r.Input, r.Result)
-
+	//for _, cmd := range commands {
+	fmt.Printf("cmd %s\n", commands)
+	r, err = d.SendCommands(commands, opoptions.WithEager())
+	if err != nil {
+		return err
 	}
+	fmt.Printf("cmd input %s, response: %s\n", r.Failed, r.Responses)
+
+	//}
 
 	return nil
 }
